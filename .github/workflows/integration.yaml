@@ -1,0 +1,93 @@
+name: Integration
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize]
+  push:
+    branches:
+      - main
+
+jobs:
+  nix-check-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v25
+      - id: set-matrix
+        name: Generate Nix Matrix
+        run: |
+          set -Eeu
+          echo "matrix=$(nix eval --json '.#githubActions.matrix')" >> "$GITHUB_OUTPUT"
+
+  nix-check:
+    needs: nix-check-matrix
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix: ${{fromJSON(needs.nix-check-matrix.outputs.matrix)}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v25
+      - run: nix build -L ".#${{ matrix.attr }}" --accept-flake-config
+
+  diff-manifests:
+    env:
+      main_branch_dump: "main_dump"
+      main_branch_dir: "old"
+      target_branch_dump: "target_dump"
+      target_branch_dir: "new"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        folder:
+          - ./crossplane/providers
+          - ./crossplane/aws/example-01
+          - ./crossplane/gcp/example-01
+          - ./crossplane/vault/vault-example
+          - ./gitops/bootstrap
+          - ./gitops/clusters/example-01
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: target
+          fetch-depth: 0
+
+      - uses: actions/checkout@v4
+        with:
+          path: main
+          ref: main
+          fetch-depth: 0
+
+      - uses: cachix/install-nix-action@v25
+      - uses: yaxitech/nix-install-pkgs-action@v3
+        with:
+          packages: "cue, yq-go"
+          inputs-from: nixpkgs
+
+      - name: Render target branch
+        run: |
+          cue cmd dump ./... > ${{ runner.temp }}/${{ env.target_branch_dump }}
+          mkdir ${{ runner.temp }}/${{ env.target_branch_dir }}
+          cd ${{ runner.temp }}/${{ env.target_branch_dir }}
+          yq -s '.kind + "_" + .metadata.name' ../${{ env.target_branch_dump }}
+        working-directory: ./target/${{ matrix.folder }}
+
+      - name: Render main branch
+        run: |
+          cue cmd dump ./... > ${{ runner.temp }}/${{ env.main_branch_dump }}
+          mkdir ${{ runner.temp }}/${{ env.main_branch_dir }}
+          cd ${{ runner.temp }}/${{ env.main_branch_dir }}
+          yq -s '.kind + "_" + .metadata.name' ../${{ env.main_branch_dump }}
+        working-directory: ./main/${{ matrix.folder }}
+
+      - name: Generate diff
+        uses: int128/diff-action@v1
+        with:
+          base: ${{ runner.temp }}/${{ env.main_branch_dir }}
+          head: ${{ runner.temp }}/${{ env.target_branch_dir }}
+          comment-header: |
+            ### Diff folder: ${{ matrix.folder }}
+          update-if-exists-key: ${{ matrix.folder }}
+          update-if-exists: replace
