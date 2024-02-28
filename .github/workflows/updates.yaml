@@ -1,0 +1,21 @@
+name: "Update"
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 10 * * 1" # https://crontab.guru/#0_10_*_*_1
+jobs:
+  update-inputs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v22
+      - uses: DeterminateSystems/update-flake-lock@v19
+        id: update
+        with:
+          pr-title: "chore: update flake.lock"
+          commit-msg: "chore: update flake.lock"
+          pr-labels: |
+            dependencies
+            automated
+      - name: Print PR number
+        run: echo Pull request number is ${{ steps.update.outputs.pull-request-number }}.
