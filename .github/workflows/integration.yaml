@@ -68,19 +68,23 @@ jobs:
 
       - name: Render target branch
         run: |
-          cue cmd dump ./... > ${{ runner.temp }}/${{ env.target_branch_dump }}
           mkdir ${{ runner.temp }}/${{ env.target_branch_dir }}
-          cd ${{ runner.temp }}/${{ env.target_branch_dir }}
-          yq -s '.kind + "_" + .metadata.name' ../${{ env.target_branch_dump }}
-        working-directory: ./target/${{ matrix.folder }}
+          if [ -d ./target/${{ matrix.folder }} ]; then
+            cd ./target/${{ matrix.folder }}
+            cue cmd dump ./... > ${{ runner.temp }}/${{ env.target_branch_dump }}
+            cd ${{ runner.temp }}/${{ env.target_branch_dir }}
+            yq -s '.kind + "_" + .metadata.name' ../${{ env.target_branch_dump }}
+          fi
 
       - name: Render main branch
         run: |
-          cue cmd dump ./... > ${{ runner.temp }}/${{ env.main_branch_dump }}
           mkdir ${{ runner.temp }}/${{ env.main_branch_dir }}
-          cd ${{ runner.temp }}/${{ env.main_branch_dir }}
-          yq -s '.kind + "_" + .metadata.name' ../${{ env.main_branch_dump }}
-        working-directory: ./main/${{ matrix.folder }}
+          if [ -d ./main/${{ matrix.folder }} ]; then
+            cd ./main/${{ matrix.folder }}
+            cue cmd dump ./... > ${{ runner.temp }}/${{ env.main_branch_dump }}
+            cd ${{ runner.temp }}/${{ env.main_branch_dir }}
+            yq -s '.kind + "_" + .metadata.name' ../${{ env.main_branch_dump }}
+          fi
 
       - name: Generate diff
         uses: int128/diff-action@v1
