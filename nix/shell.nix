@@ -17,6 +17,7 @@
       packages = with pkgs; [
         argocd
         argocd-vault-plugin
+        fluxctl
         awscli2
         cue
         cilium-cli
