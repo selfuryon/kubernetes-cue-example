@@ -16,6 +16,16 @@ Current folder structure:
   - `gcp` used for managing particular project in GCP
   - `vault` used for managing particular Vault instance
 
+# Agenda
+
+We have several projects:
+
+- prod
+- uat
+- dev
+
+where prod and uat are managed by one set of argocd/crossplane and dev by another set.
+
 ## Direnv
 
 To allow direnv to check changes in devShell we need to use this .envrc
