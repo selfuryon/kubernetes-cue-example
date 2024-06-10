@@ -25,7 +25,7 @@ crossplane: provider: "upbound-provider-family-gcp": spec: {
 crossplane: deploymentRuntimeConfig: "provider-gcp": spec: {
 	serviceAccountTemplate: metadata: {
 		name: "provider-gcp"
-		annotations: "iam.gke.io/gcp-service-account": "crossplane@<!!!>.iam.gserviceaccount.com"
+		annotations: "iam.gke.io/gcp-service-account": "crossplane@dev-infra.iam.gserviceaccount.com"
 	}
 	deploymentTemplate: spec: {
 		selector: {}

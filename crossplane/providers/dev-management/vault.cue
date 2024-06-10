@@ -8,7 +8,7 @@ crossplane: provider: "provider-vault": spec: {
 crossplane: deploymentRuntimeConfig: "provider-vault": spec: {
 	serviceAccountTemplate: metadata: {
 		name: "provider-vault"
-		annotations: "iam.gke.io/gcp-service-account": "crossplane@<!!!>.iam.gserviceaccount.com"
+		annotations: "iam.gke.io/gcp-service-account": "crossplane@dev-infra.iam.gserviceaccount.com"
 	}
 	deploymentTemplate: spec: {
 		selector: {}
